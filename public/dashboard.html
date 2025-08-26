@@ -93,6 +93,57 @@
                     </label>
                 </div>
                 
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Data Routing (Optional)</h3>
+                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
+                    Choose where form submissions should be sent. Leave blank to use default SQLite storage.
+                </p>
+                
+                <div class="form-grid">
+                    <select id="databaseType" class="form-input" onchange="toggleDatabaseOptions()">
+                        <option value="">Select routing option...</option>
+                        <option value="sqlite">SQLite (Default)</option>
+                        <option value="make_webhook">Make.com Webhook</option>
+                        <option value="google_sheets">Google Sheets</option>
+                        <option value="webhook">Custom Webhook</option>
+                        <option value="turso">Turso Database</option>
+                    </select>
+                </div>
+                
+                <!-- Make.com Webhook Options -->
+                <div id="makeWebhookOptions" style="display: none; margin-top: 15px;">
+                    <input type="url" id="makeWebhookUrl" placeholder="Make.com Webhook URL" class="form-input">
+                </div>
+                
+                <!-- Google Sheets Options -->
+                <div id="googleSheetsOptions" style="display: none; margin-top: 15px;">
+                    <div class="form-grid">
+                        <input type="text" id="sheetId" placeholder="Google Sheets ID" class="form-input">
+                        <input type="email" id="serviceEmail" placeholder="Service Account Email" class="form-input">
+                    </div>
+                    <textarea id="privateKey" placeholder="Private Key (-----BEGIN PRIVATE KEY-----...)" class="form-input" rows="3" style="width: 100%; margin-top: 15px;"></textarea>
+                </div>
+                
+                <!-- Custom Webhook Options -->
+                <div id="webhookOptions" style="display: none; margin-top: 15px;">
+                    <input type="url" id="webhookUrl" placeholder="Webhook URL (https://your-api.com/webhooks/forms)" class="form-input" style="margin-bottom: 15px;">
+                    <div class="form-grid">
+                        <input type="text" id="headerKey1" placeholder="Header Key (e.g., Authorization)" class="form-input">
+                        <input type="text" id="headerValue1" placeholder="Header Value (e.g., Bearer your-token)" class="form-input">
+                    </div>
+                    <div class="form-grid" style="margin-top: 10px;">
+                        <input type="text" id="headerKey2" placeholder="Additional Header Key (optional)" class="form-input">
+                        <input type="text" id="headerValue2" placeholder="Additional Header Value (optional)" class="form-input">
+                    </div>
+                </div>
+                
+                <!-- Turso Options -->
+                <div id="tursoOptions" style="display: none; margin-top: 15px;">
+                    <div class="form-grid">
+                        <input type="url" id="tursoUrl" placeholder="Turso Database URL" class="form-input">
+                        <input type="text" id="tursoToken" placeholder="Turso Auth Token" class="form-input">
+                    </div>
+                </div>
+                
                 <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;">
                     <label style="display: flex; align-items: flex-start; gap: 12px; font-size: 14px; line-height: 1.5;">
                         <input type="checkbox" id="termsConsent" required style="margin-top: 2px; transform: scale(1.2);">
@@ -135,12 +186,59 @@
                 };
             }
             
+            // Build database configuration
+            let databaseConfig = { type: 'sqlite' }; // Default
+            const dbType = document.getElementById('databaseType').value;
+            
+            if (dbType === 'make_webhook') {
+                const webhookUrl = document.getElementById('makeWebhookUrl').value.trim();
+                if (webhookUrl) {
+                    databaseConfig = { type: 'make_webhook', webhookUrl };
+                }
+            } else if (dbType === 'google_sheets') {
+                const sheetId = document.getElementById('sheetId').value.trim();
+                const serviceEmail = document.getElementById('serviceEmail').value.trim();
+                const privateKey = document.getElementById('privateKey').value.trim();
+                if (sheetId && serviceEmail && privateKey) {
+                    databaseConfig = {
+                        type: 'google_sheets',
+                        sheetId,
+                        credentials: {
+                            type: 'service_account',
+                            client_email: serviceEmail,
+                            private_key: privateKey
+                        }
+                    };
+                }
+            } else if (dbType === 'webhook') {
+                const webhookUrl = document.getElementById('webhookUrl').value.trim();
+                if (webhookUrl) {
+                    const headers = {};
+                    const key1 = document.getElementById('headerKey1').value.trim();
+                    const value1 = document.getElementById('headerValue1').value.trim();
+                    const key2 = document.getElementById('headerKey2').value.trim();
+                    const value2 = document.getElementById('headerValue2').value.trim();
+                    
+                    if (key1 && value1) headers[key1] = value1;
+                    if (key2 && value2) headers[key2] = value2;
+                    
+                    databaseConfig = { type: 'webhook', webhookUrl, headers };
+                }
+            } else if (dbType === 'turso') {
+                const url = document.getElementById('tursoUrl').value.trim();
+                const authToken = document.getElementById('tursoToken').value.trim();
+                if (url && authToken) {
+                    databaseConfig = { type: 'turso', url, authToken };
+                }
+            }
+            
             const formData = {
                 name: document.getElementById('formName').value,
                 redirect_url: document.getElementById('redirectUrl').value,
                 success_message: document.getElementById('successMessage').value,
                 email_template: document.getElementById('emailTemplate').value,
-                email_config: emailConfig
+                email_config: emailConfig,
+                database: databaseConfig
             };
 
             try {
@@ -179,6 +277,39 @@
                     </div>
                 `;
             }
+        });
+        
+        // Toggle database options based on selection
+        function toggleDatabaseOptions() {
+            const dbType = document.getElementById('databaseType').value;
+            
+            // Hide all options first
+            document.getElementById('makeWebhookOptions').style.display = 'none';
+            document.getElementById('googleSheetsOptions').style.display = 'none';
+            document.getElementById('webhookOptions').style.display = 'none';
+            document.getElementById('tursoOptions').style.display = 'none';
+            
+            // Show relevant option
+            if (dbType === 'make_webhook') {
+                document.getElementById('makeWebhookOptions').style.display = 'block';
+            } else if (dbType === 'google_sheets') {
+                document.getElementById('googleSheetsOptions').style.display = 'block';
+            } else if (dbType === 'webhook') {
+                document.getElementById('webhookOptions').style.display = 'block';
+            } else if (dbType === 'turso') {
+                document.getElementById('tursoOptions').style.display = 'block';
+            }
+        }
+        
+        // Add some visual feedback for form interactions
+        document.querySelectorAll('input, textarea, select').forEach(field => {
+            field.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-2px)';
+            });
+            
+            field.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+            });
         });
 
     </script>
