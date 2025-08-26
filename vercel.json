@@ -7,7 +7,8 @@
   "rewrites": [
     {
       "source": "/dashboard",
-      "destination": "/dashboard.html"
+      "destination": "/public/dashboard.html"
     }
-  ]
+  ],
+  "cleanUrls": true
 }
