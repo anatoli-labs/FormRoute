@@ -17,7 +17,7 @@ A serverless form handling service that processes form submissions, sends email 
 ### Option 1: Deploy to Vercel (Recommended)
 
 1. **One-click deploy:**
-   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/formroute)
+   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/anatoli-labs/FormRoute)
 
 2. **Or manual deployment:**
    ```bash
