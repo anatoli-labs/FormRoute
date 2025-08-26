@@ -11,7 +11,18 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Form name is required' });
       }
       
-      const form = await FormManager.createForm(formData);
+      // Capture consent metadata
+      const consentMetadata = {
+        consentTimestamp: new Date().toISOString(),
+        consentIp: req.headers['x-forwarded-for']?.split(',')[0] || 
+                   req.headers['x-real-ip'] || 
+                   req.connection?.remoteAddress || 
+                   '127.0.0.1',
+        termsVersion: 'v1.0-2025-08-25',
+        privacyVersion: 'v1.0-2025-08-25'
+      };
+      
+      const form = await FormManager.createForm(formData, consentMetadata);
       
       res.json({
         success: true,
