@@ -50,29 +50,6 @@
         .btn:hover {
             background: #0056b3;
         }
-        .submissions {
-            margin-top: 30px;
-        }
-        .submission {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-        .submission-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-        .submission-data {
-            background: white;
-            padding: 10px;
-            border-radius: 4px;
-            font-family: monospace;
-            white-space: pre-wrap;
-        }
         .form-url {
             background: #e9ecef;
             padding: 10px;
@@ -132,12 +109,6 @@
             <div id="formResult"></div>
         </div>
 
-        <div class="form-section">
-            <h2>View Submissions</h2>
-            <input type="text" id="formIdInput" placeholder="Form ID" class="form-input" style="margin-right: 10px;">
-            <button onclick="loadSubmissions()" class="btn">Load Submissions</button>
-            <div id="submissions" class="submissions"></div>
-        </div>
     </div>
 
     <script>
@@ -210,43 +181,6 @@
             }
         });
 
-        async function loadSubmissions() {
-            const formId = document.getElementById('formIdInput').value;
-            if (!formId) {
-                alert('Please enter a Form ID');
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/forms/${formId}/submissions`);
-                const result = await response.json();
-
-                if (result.submissions) {
-                    const submissionsDiv = document.getElementById('submissions');
-                    submissionsDiv.innerHTML = `
-                        <h3>Submissions for Form: ${formId}</h3>
-                        ${result.submissions.map(submission => `
-                            <div class="submission">
-                                <div class="submission-header">
-                                    <span>ID: ${submission.id}</span>
-                                    <span>${new Date(submission.submitted_at).toLocaleString()}</span>
-                                </div>
-                                <div class="submission-data">${JSON.stringify(submission.data, null, 2)}</div>
-                                <small style="color: #666;">IP: ${submission.ip_address}</small>
-                            </div>
-                        `).join('')}
-                    `;
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (error) {
-                document.getElementById('submissions').innerHTML = `
-                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px;">
-                        Error: ${error.message}
-                    </div>
-                `;
-            }
-        }
     </script>
 </body>
 </html>
