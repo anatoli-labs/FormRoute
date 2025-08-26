@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   
   try {
     const { formId } = req.query;
-    const form = FormManager.getForm(formId);
+    const form = await FormManager.getForm(formId);
     
     if (!form) {
       return res.status(404).json({ error: 'Form not found' });

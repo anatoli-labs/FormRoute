@@ -11,7 +11,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Form name is required' });
       }
       
-      const form = FormManager.createForm(formData);
+      const form = await FormManager.createForm(formData);
       
       res.json({
         success: true,
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   } else if (req.method === 'GET') {
     // List all forms
     try {
-      const allForms = FormManager.getAllForms();
+      const allForms = await FormManager.getAllForms();
       res.json({ forms: allForms });
     } catch (error) {
       console.error('Error fetching forms:', error);
