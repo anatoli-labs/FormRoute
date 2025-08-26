@@ -96,6 +96,26 @@
                     <input type="text" id="successMessage" placeholder="Success Message (optional)" class="form-input">
                 </div>
                 <textarea id="emailTemplate" placeholder="Email Template (HTML, optional)" class="form-input" rows="4" style="width: 100%; margin-bottom: 15px;"></textarea>
+                
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Email Configuration (Optional)</h3>
+                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
+                    Configure SMTP settings to send email notifications for this form. Leave blank to disable email notifications.
+                </p>
+                
+                <div class="form-grid">
+                    <input type="text" id="smtpHost" placeholder="SMTP Host (e.g., mail.smtp2go.com)" class="form-input">
+                    <input type="number" id="smtpPort" placeholder="SMTP Port (e.g., 587)" class="form-input">
+                    <input type="text" id="smtpUser" placeholder="SMTP Username" class="form-input">
+                    <input type="password" id="smtpPass" placeholder="SMTP Password" class="form-input">
+                </div>
+                <div class="form-grid" style="margin-top: 15px;">
+                    <input type="email" id="fromEmail" placeholder="From Email (sender)" class="form-input">
+                    <input type="email" id="toEmail" placeholder="To Email (recipient)" class="form-input">
+                    <label style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+                        <input type="checkbox" id="smtpSecure"> Use SSL/TLS (recommended for port 465)
+                    </label>
+                </div>
+                
                 <button type="submit" class="btn">Create Form</button>
             </form>
             <div id="formResult"></div>
@@ -113,11 +133,32 @@
         document.getElementById('createForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            // Build email configuration if SMTP fields are filled
+            let emailConfig = null;
+            const smtpHost = document.getElementById('smtpHost').value.trim();
+            const smtpUser = document.getElementById('smtpUser').value.trim();
+            const smtpPass = document.getElementById('smtpPass').value.trim();
+            const fromEmail = document.getElementById('fromEmail').value.trim();
+            const toEmail = document.getElementById('toEmail').value.trim();
+            
+            if (smtpHost && smtpUser && smtpPass && fromEmail && toEmail) {
+                emailConfig = {
+                    smtp_host: smtpHost,
+                    smtp_port: parseInt(document.getElementById('smtpPort').value) || 587,
+                    smtp_secure: document.getElementById('smtpSecure').checked,
+                    smtp_user: smtpUser,
+                    smtp_pass: smtpPass,
+                    from_email: fromEmail,
+                    to_email: toEmail
+                };
+            }
+            
             const formData = {
                 name: document.getElementById('formName').value,
                 redirect_url: document.getElementById('redirectUrl').value,
                 success_message: document.getElementById('successMessage').value,
-                email_template: document.getElementById('emailTemplate').value
+                email_template: document.getElementById('emailTemplate').value,
+                email_config: emailConfig
             };
 
             try {
