@@ -1,16 +1,17 @@
 # FormRoute
 
-A serverless form handling service that processes form submissions, sends email notifications, and stores data in your choice of database. Perfect for static websites that need form functionality.
+A privacy-first serverless form handling service that processes form submissions, sends email notifications, and routes data to your choice of external services. Perfect for static websites that need form functionality without storing user data.
 
 ## Features
 
-- ✅ **Serverless** - Deploy to Vercel, Netlify, or any serverless platform
-- ✅ **Multiple Databases** - SQLite, Google Sheets, Turso, Make.com, or custom webhooks
+- ✅ **Privacy-First** - No form data storage, pass-through architecture only
+- ✅ **Per-Form SMTP** - Each form can use its own email configuration
+- ✅ **Web Dashboard** - Easy form creation and management via web interface
+- ✅ **Multiple Integrations** - Route to Google Sheets, Make.com, Zapier, or custom webhooks
 - ✅ **Spam Protection** - reCAPTCHA, hCaptcha, Turnstile, honeypot fields
-- ✅ **Authentication** - API keys, domain restrictions, or public forms
-- ✅ **Email Notifications** - Customizable HTML templates
+- ✅ **Serverless** - Deploy to Vercel, Netlify, or any serverless platform
 - ✅ **Rate Limiting** - Built-in protection against abuse
-- ✅ **Zero Config** - Works out of the box with SQLite, configure what you need
+- ✅ **Legal Compliance** - GDPR-ready with consent tracking and privacy policies
 
 ## Quick Start
 
@@ -26,7 +27,7 @@ A serverless form handling service that processes form submissions, sends email 
    ```
 
 3. **Access dashboard:**
-   Visit your Vercel URL - dashboard loads automatically
+   Visit your Vercel URL at `/dashboard` to create and manage forms
 
 ### Option 2: Local Development
 
@@ -42,7 +43,20 @@ A serverless form handling service that processes form submissions, sends email 
 
 ## Usage
 
-### 1. Create a Form
+### Option 1: Web Dashboard (Recommended)
+
+1. **Visit the Dashboard:**
+   - Go to `https://your-app.vercel.app/dashboard`
+   - Fill out the form creation wizard
+   - Configure SMTP settings for email notifications
+   - Set up data routing (Google Sheets, Make.com, etc.)
+   - Accept Terms of Service and Privacy Policy
+
+2. **Get Your Form URL:**
+   - Dashboard will provide your unique form submission URL
+   - Copy the URL for use in your HTML forms
+
+### Option 2: API (Advanced)
 
 **POST** `/api/forms`
 
@@ -52,8 +66,18 @@ A serverless form handling service that processes form submissions, sends email 
   "email_template": "<h2>New Contact</h2><p>Name: {{name}}</p><p>Email: {{email}}</p>",
   "redirect_url": "https://yoursite.com/thank-you",
   "success_message": "Thank you for your message!",
+  "email_config": {
+    "smtp_host": "mail.smtp2go.com",
+    "smtp_port": 587,
+    "smtp_secure": true,
+    "smtp_user": "your-username",
+    "smtp_pass": "your-password",
+    "from_email": "noreply@yoursite.com",
+    "to_email": "admin@yoursite.com"
+  },
   "database": {
-    "type": "sqlite"
+    "type": "make_webhook",
+    "webhookUrl": "https://hook.us1.make.com/your-webhook-url"
   },
   "spam_protection": {
     "captcha": {
@@ -77,7 +101,7 @@ A serverless form handling service that processes form submissions, sends email 
 }
 ```
 
-### 2. Use in Your HTML
+### HTML Form Integration
 
 ```html
 <form action="https://your-app.vercel.app/api/submit/YOUR-FORM-ID" method="POST">
@@ -95,19 +119,18 @@ A serverless form handling service that processes form submissions, sends email 
 </form>
 ```
 
-### 3. View Submissions
+## Data Routing Options
 
-**GET** `/api/forms/{formId}/submissions`
+FormRoute doesn't store your form submissions - instead, it routes them to external services you control.
 
-Returns all submissions for a specific form (requires API key if form is protected).
-
-## Database Options
-
-### SQLite (Default)
-Works everywhere, no configuration needed:
+### Make.com Webhook (Recommended)
+Route submissions to Make.com for powerful automation:
 ```json
 {
-  "database": { "type": "sqlite" }
+  "database": {
+    "type": "make_webhook",
+    "webhookUrl": "https://hook.us1.make.com/your-webhook-url"
+  }
 }
 ```
 
@@ -127,19 +150,8 @@ Send submissions to Google Sheets:
 }
 ```
 
-### Make.com Webhook
-Trigger Make scenarios:
-```json
-{
-  "database": {
-    "type": "make_webhook",
-    "webhookUrl": "https://hook.us1.make.com/your-webhook-url"
-  }
-}
-```
-
-### Turso (SQLite in the Cloud)
-Scalable SQLite database:
+### Turso Database
+Store in Turso (SQLite in the cloud) for later API access:
 ```json
 {
   "database": {
@@ -164,22 +176,32 @@ Send to any API:
 }
 ```
 
-## Authentication & Security
+## Email Configuration
 
-### API Keys
-Protect form creation/viewing with API keys:
+### Per-Form SMTP
+Each form can have its own email settings:
+
 ```json
 {
-  "name": "Private Form",
-  "api_key": "your-secret-key",
-  "allowed_domains": ["yoursite.com", "www.yoursite.com"]
+  "email_config": {
+    "smtp_host": "smtp.gmail.com",
+    "smtp_port": 587,
+    "smtp_secure": true,
+    "smtp_user": "your-email@gmail.com",
+    "smtp_pass": "your-app-password",
+    "from_email": "noreply@yoursite.com",
+    "to_email": "admin@yoursite.com"
+  }
 }
 ```
 
-Access with API key:
-```bash
-curl -H "X-API-Key: your-secret-key" https://your-app.vercel.app/api/forms/form-id/submissions
-```
+### Popular SMTP Providers
+- **Gmail**: `smtp.gmail.com:587` (use app passwords)
+- **SMTP2GO**: `mail.smtp2go.com:587`
+- **SendGrid**: `smtp.sendgrid.net:587`
+- **Mailgun**: `smtp.mailgun.org:587`
+
+## Authentication & Security
 
 ### Spam Protection
 Multiple CAPTCHA options:
@@ -204,7 +226,6 @@ Multiple CAPTCHA options:
 |--------|----------|-------------|
 | POST | `/api/forms` | Create a new form |
 | POST | `/api/submit/{formId}` | Submit form data |
-| GET | `/api/forms/{formId}/submissions` | Get form submissions |
 
 ## Deployment
 
@@ -215,30 +236,69 @@ vercel
 ```
 
 ### Environment Variables
-Set in Vercel dashboard or `.env`:
+Only needed for form storage (not email - that's per-form):
 ```env
-# Email (optional)
-SMTP_HOST=smtp.gmail.com
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-FROM_EMAIL=noreply@yoursite.com
-TO_EMAIL=admin@yoursite.com
-
-# Database credentials (as needed)
+# Form storage (required)
 TURSO_DATABASE_URL=libsql://your-db.turso.io
-TURSO_AUTH_TOKEN=your-token
-GOOGLE_SERVICE_ACCOUNT_EMAIL=service@project.iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----...
+TURSO_AUTH_TOKEN=your-turso-token
 ```
 
-## Security Features
+### Database Setup
+1. Create a Turso database: `turso db create formroute`
+2. Get connection details: `turso db show formroute`
+3. Create auth token: `turso db tokens create formroute`
+4. Run the schema:
+```sql
+CREATE TABLE forms (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email_template TEXT,
+  redirect_url TEXT,
+  success_message TEXT DEFAULT 'Thank you for your submission!',
+  database_config TEXT NOT NULL,
+  spam_protection TEXT,
+  email_config TEXT,
+  api_key TEXT,
+  allowed_domains TEXT,
+  consent_timestamp TEXT,
+  consent_ip TEXT,
+  terms_version TEXT DEFAULT 'v1.0-2025-08-25',
+  privacy_version TEXT DEFAULT 'v1.0-2025-08-25',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
 
+## Security & Privacy
+
+### Security Features
 - Rate limiting (10 submissions per 15 minutes per IP)
 - Input validation and sanitization
 - Helmet.js security headers
 - CORS protection
 - SQL injection prevention
+- Per-form SMTP credential encryption
+
+### Privacy-First Architecture
+- **No submission data storage** - FormRoute only stores form configurations
+- **Pass-through processing** - Data is routed to your chosen services only
+- **GDPR compliance** - Consent tracking and privacy policies included
+- **User control** - Users choose where their data goes (Make.com, Google Sheets, etc.)
+
+### Legal Compliance
+- Terms of Service and Privacy Policy included
+- Consent tracking for form creation
+- Audit trail for compliance requirements
+- Right to deletion (users can delete their forms)
+
+## Contributing
+
+FormRoute is open source! Visit our [GitHub repository](https://github.com/anatoli-labs/FormRoute) to contribute.
 
 ## License
 
 ISC
+
+---
+
+**Built with ❤️ by [Anatoli Labs](https://anatolilabs.com)**
