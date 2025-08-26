@@ -1,0 +1,76 @@
+{
+  "basic_sqlite": {
+    "name": "Contact Form",
+    "success_message": "Thank you for your message!",
+    "database": {
+      "type": "sqlite"
+    }
+  },
+  
+  "google_sheets": {
+    "name": "Newsletter Signup",
+    "success_message": "Welcome to our newsletter!",
+    "database": {
+      "type": "google_sheets",
+      "sheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "credentials": {
+        "type": "service_account",
+        "client_email": "your-service-account@project.iam.gserviceaccount.com",
+        "private_key": "-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n"
+      }
+    }
+  },
+  
+  "make_webhook": {
+    "name": "Lead Generation",
+    "success_message": "We'll be in touch soon!",
+    "database": {
+      "type": "make_webhook",
+      "webhookUrl": "https://hook.us1.make.com/your-webhook-url"
+    },
+    "spam_protection": {
+      "captcha": {
+        "type": "recaptcha_v3",
+        "secretKey": "your-recaptcha-secret-key",
+        "field": "g-recaptcha-response",
+        "minScore": 0.5
+      },
+      "honeypot": {
+        "field": "_gotcha"
+      }
+    }
+  },
+  
+  "turso_with_auth": {
+    "name": "Premium Contact Form",
+    "success_message": "Your message has been received!",
+    "api_key": "your-secret-api-key",
+    "allowed_domains": ["yoursite.com", "www.yoursite.com"],
+    "database": {
+      "type": "turso",
+      "url": "libsql://your-database.turso.io",
+      "authToken": "your-turso-auth-token"
+    },
+    "spam_protection": {
+      "captcha": {
+        "type": "hcaptcha",
+        "secretKey": "your-hcaptcha-secret-key",
+        "field": "h-captcha-response"
+      }
+    },
+    "email_template": "<h2>New Premium Contact</h2><p><strong>Name:</strong> {{name}}</p><p><strong>Email:</strong> {{email}}</p><p><strong>Message:</strong> {{message}}</p>"
+  },
+  
+  "webhook_integration": {
+    "name": "Custom Integration",
+    "success_message": "Data sent to your system!",
+    "database": {
+      "type": "webhook",
+      "webhookUrl": "https://your-api.com/webhooks/forms",
+      "headers": {
+        "Authorization": "Bearer your-api-token",
+        "X-Source": "FormRoute"
+      }
+    }
+  }
+}
