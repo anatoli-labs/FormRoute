@@ -92,11 +92,12 @@
         <li><strong>Database Configuration:</strong> Database connection settings and API keys for third-party services</li>
     </ul>
 
-    <h3>2.2 Form Submission Data</h3>
-    <p>When end users submit forms created through FormRoute:</p>
+    <h3>2.2 Form Submission Data (Pass-Through Only)</h3>
+    <p><span class="highlight"><strong>Privacy-First Architecture:</strong> FormRoute does not store form submission data.</span> When end users submit forms, we process and route the data to your configured services without permanent storage:</p>
     <ul>
-        <li><strong>Form Data:</strong> Any information submitted through forms (names, emails, messages, etc.)</li>
-        <li><strong>Technical Data:</strong> IP addresses, user agents, timestamps, submission metadata</li>
+        <li><strong>Form Data:</strong> Routed directly to your chosen database or webhook service</li>
+        <li><strong>Technical Data:</strong> IP addresses, user agents, and timestamps are included in the data sent to your services</li>
+        <li><strong>Email Processing:</strong> Form data is used to send email notifications then discarded</li>
     </ul>
 
     <h3>2.3 Automatically Collected Information</h3>
@@ -130,6 +131,7 @@
         <li><strong>Email Services:</strong> Your SMTP credentials are used to send emails through your chosen provider</li>
         <li><strong>Database Services:</strong> Form data is stored in databases you configure (Google Sheets, Turso, etc.)</li>
         <li><strong>Webhook Services:</strong> Form data is sent to webhook URLs you specify (Make.com, Zapier, etc.)</li>
+        <li><span class="highlight"><strong>Custom Webhooks:</strong> When you use custom webhooks, your credentials are encoded in your form URLs and never stored in our database</span></li>
     </ul>
 
     <h3>4.2 We Do Not Sell Your Data</h3>
@@ -151,8 +153,9 @@
     <h2>6. Data Retention</h2>
     <ul>
         <li><strong>Form Configurations:</strong> Retained until you delete your forms</li>
-        <li><strong>Form Submissions:</strong> Retention depends on your database configuration</li>
+        <li><span class="highlight"><strong>Form Submissions:</strong> Not stored by FormRoute - data is immediately routed to your configured services</span></li>
         <li><strong>SMTP Credentials:</strong> Stored securely and deleted when you remove email configuration</li>
+        <li><span class="highlight"><strong>Custom Webhook Credentials:</strong> Never stored in our database - encoded in your form URLs only</span></li>
         <li><strong>Logs:</strong> Technical logs are retained for up to 90 days for debugging purposes</li>
     </ul>
 

@@ -186,8 +186,9 @@
                 };
             }
             
-            // Build database configuration
+            // Build database configuration (excluding custom webhooks)
             let databaseConfig = { type: 'sqlite' }; // Default
+            let webhookConfig = null; // For client-side webhooks
             const dbType = document.getElementById('databaseType').value;
             
             if (dbType === 'make_webhook') {
@@ -211,6 +212,7 @@
                     };
                 }
             } else if (dbType === 'webhook') {
+                // Custom webhooks are handled client-side only
                 const webhookUrl = document.getElementById('webhookUrl').value.trim();
                 if (webhookUrl) {
                     const headers = {};
@@ -222,7 +224,8 @@
                     if (key1 && value1) headers[key1] = value1;
                     if (key2 && value2) headers[key2] = value2;
                     
-                    databaseConfig = { type: 'webhook', webhookUrl, headers };
+                    webhookConfig = { type: 'webhook', webhookUrl, headers };
+                    databaseConfig = { type: 'client_webhook' }; // Marker for client-side webhook
                 }
             } else if (dbType === 'turso') {
                 const url = document.getElementById('tursoUrl').value.trim();
@@ -253,20 +256,30 @@
                 const result = await response.json();
                 
                 if (result.success) {
+                    let submitUrl = result.submitUrl;
+                    
+                    // If custom webhook was configured, encode it in the URL
+                    if (webhookConfig) {
+                        const encodedConfig = btoa(JSON.stringify(webhookConfig));
+                        submitUrl = `${result.submitUrl}?webhook=${encodeURIComponent(encodedConfig)}`;
+                    }
+                    
                     document.getElementById('formResult').innerHTML = `
                         <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 4px; margin-top: 15px;">
                             <strong>Form created successfully!</strong><br>
                             Form ID: ${result.formId}
                             <div class="form-url">
-                                Submit URL: ${result.submitUrl}
+                                Submit URL: ${submitUrl}
                             </div>
                             <p style="margin-top: 10px; font-size: 14px;">
                                 Use this URL as your form action:<br>
-                                <code>&lt;form action="${result.submitUrl}" method="POST"&gt;</code>
+                                <code>&lt;form action="${submitUrl}" method="POST"&gt;</code>
                             </p>
+                            ${webhookConfig ? '<p style="margin-top: 10px; font-size: 12px; color: #856404; background: #fff3cd; padding: 8px; border-radius: 4px;"><strong>Privacy Note:</strong> Your webhook credentials are encoded in the URL and not stored in our database.</p>' : ''}
                         </div>
                     `;
                     document.getElementById('createForm').reset();
+                    toggleDatabaseOptions(); // Reset form options
                 } else {
                     throw new Error(result.error);
                 }

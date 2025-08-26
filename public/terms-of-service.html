@@ -92,14 +92,14 @@
 
     <h2>2. Description of Service</h2>
     <p>
-        FormRoute is a serverless form handling service that allows you to:
+        FormRoute is a privacy-first serverless form handling service that allows you to:
     </p>
     <ul>
         <li>Create and configure form endpoints</li>
-        <li>Process form submissions</li>
+        <li><span class="highlight">Process form submissions without permanent data storage</span></li>
         <li>Send email notifications using your SMTP credentials</li>
-        <li>Store form data in various databases and third-party services</li>
-        <li>Route form data to webhooks and automation platforms</li>
+        <li>Route form data directly to your chosen databases and third-party services</li>
+        <li>Configure custom webhooks with credentials encoded in your form URLs</li>
     </ul>
 
     <h2>3. Account and Data Responsibility</h2>
@@ -108,6 +108,7 @@
     <p>You are responsible for:</p>
     <ul>
         <li><strong>SMTP Credentials:</strong> Securing and managing your email server credentials</li>
+        <li><span class="highlight"><strong>Custom Webhook Credentials:</strong> Protecting webhook URLs that contain your encoded credentials</span></li>
         <li><strong>Form Content:</strong> Ensuring forms comply with applicable laws and regulations</li>
         <li><strong>Data Compliance:</strong> Meeting privacy and data protection requirements in your jurisdiction</li>
         <li><strong>Third-Party Services:</strong> Managing your relationships with integrated services (Google Sheets, Make.com, etc.)</li>
@@ -154,10 +155,14 @@
         <li>You can delete your forms and associated data at any time</li>
     </ul>
 
-    <h3>5.2 SMTP Credentials</h3>
+    <h3>5.2 Credential Security</h3>
     <div class="warning">
-        <strong>Security Notice:</strong> SMTP credentials are stored encrypted but you provide them at your own risk. 
+        <strong>SMTP Credentials:</strong> SMTP credentials are stored encrypted but you provide them at your own risk. 
         Use app-specific passwords when available and avoid using primary account credentials.
+    </div>
+    
+    <div class="warning">
+        <strong>Custom Webhook Credentials:</strong> When using custom webhooks, your credentials are encoded in your form URLs and never stored in our database. You are responsible for protecting these URLs and the credentials they contain.
     </div>
 
     <h2>6. Intellectual Property</h2>

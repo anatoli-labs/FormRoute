@@ -162,19 +162,28 @@ Store in Turso (SQLite in the cloud) for later API access:
 }
 ```
 
-### Custom Webhook
-Send to any API:
-```json
-{
-  "database": {
-    "type": "webhook",
-    "webhookUrl": "https://your-api.com/webhooks/forms",
-    "headers": {
-      "Authorization": "Bearer your-token"
-    }
+### Custom Webhook (Client-Side Only)
+Send to any API with your own credentials:
+
+**Via Dashboard:** Select "Custom Webhook" and configure URL + headers. Your credentials are encoded in the form URL and never stored in our database.
+
+**Manual Configuration:** Developers can add webhook functionality to any form:
+```javascript
+// Create webhook config
+const webhookConfig = {
+  type: "webhook",
+  webhookUrl: "https://your-api.com/webhooks/forms",
+  headers: {
+    "Authorization": "Bearer your-token"
   }
-}
+};
+
+// Encode and append to any FormRoute URL
+const encoded = btoa(JSON.stringify(webhookConfig));
+const formUrl = `https://form-route.vercel.app/api/submit/form-id?webhook=${encodeURIComponent(encoded)}`;
 ```
+
+**Privacy:** Webhook credentials are never stored in FormRoute's database - they're encoded in your form URLs only.
 
 ## Email Configuration
 

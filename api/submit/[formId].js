@@ -19,11 +19,23 @@ export default async function handler(req, res) {
   }
   
   try {
-    const { formId } = req.query;
+    const { formId, webhook } = req.query;
     const form = await FormManager.getForm(formId);
     
     if (!form) {
       return res.status(404).json({ error: 'Form not found' });
+    }
+    
+    // Check for client-side webhook configuration
+    let databaseConfig = form.database;
+    if (webhook && form.database.type === 'client_webhook') {
+      try {
+        const decodedConfig = JSON.parse(Buffer.from(decodeURIComponent(webhook), 'base64').toString('utf-8'));
+        databaseConfig = decodedConfig;
+      } catch (error) {
+        console.error('Failed to decode webhook config:', error);
+        return res.status(400).json({ error: 'Invalid webhook configuration' });
+      }
     }
     
     // Rate limiting
@@ -55,8 +67,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Spam protection failed', reason: spamResult.reason });
     }
     
-    // Save to database
-    const dbAdapter = createDatabaseAdapter(form.database);
+    // Save to database (use decoded webhook config if available)
+    const dbAdapter = createDatabaseAdapter(databaseConfig);
     const metadata = {
       ip: clientIP,
       userAgent: req.headers['user-agent'] || '',
