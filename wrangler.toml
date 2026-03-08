@@ -14,3 +14,6 @@ database_id = "5bcfc7fe-8243-4db9-a78f-7f1312cfe685"
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
 id = "b9a102f0160c447c9ef9025a0e5b72db"
+
+[observability]
+enabled = true
