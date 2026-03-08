@@ -1,330 +1,1237 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FormRoute Dashboard</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            padding: 30px;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-        }
-        .form-section {
-            margin-bottom: 40px;
-        }
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .form-input {
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .btn {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn:hover {
-            background: #0056b3;
-        }
-        .form-url {
-            background: #e9ecef;
-            padding: 10px;
-            border-radius: 4px;
-            font-family: monospace;
-            margin-top: 10px;
-            word-break: break-all;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FormRoute Dashboard</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --color-bg: #f8f9fa;
+      --color-surface: #ffffff;
+      --color-border: #dee2e6;
+      --color-border-light: #e9ecef;
+      --color-text: #212529;
+      --color-text-muted: #6c757d;
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-danger: #dc2626;
+      --color-danger-hover: #b91c1c;
+      --color-success: #16a34a;
+      --color-success-bg: #f0fdf4;
+      --color-error-bg: #fef2f2;
+      --color-warning-bg: #fffbeb;
+      --radius: 6px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    body {
+      font-family: var(--font-stack);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ---- Auth Gate ---- */
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--color-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .auth-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+      margin: 1rem;
+    }
+
+    .auth-card h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .auth-card p {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ---- Layout ---- */
+    .app-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .app-header h1 {
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .app-header button {
+      font-size: 0.8125rem;
+      color: var(--color-text-muted);
+      background: none;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 0.375rem 0.75rem;
+      cursor: pointer;
+    }
+
+    .app-header button:hover {
+      background: var(--color-bg);
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    /* ---- Shared Form Elements ---- */
+    label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+      color: var(--color-text);
+    }
+
+    input[type="text"],
+    input[type="url"],
+    input[type="email"],
+    input[type="password"],
+    textarea,
+    select {
+      display: block;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      font-family: var(--font-stack);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-surface);
+      color: var(--color-text);
+      transition: border-color 0.15s;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+    }
+
+    .field {
+      margin-bottom: 1rem;
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 600px) {
+      .field-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ---- Buttons ---- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.375rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      font-family: var(--font-stack);
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+    }
+
+    .btn-danger {
+      background: var(--color-surface);
+      color: var(--color-danger);
+      border-color: var(--color-border);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: var(--color-error-bg);
+      border-color: var(--color-danger);
+    }
+
+    .btn-ghost {
+      background: none;
+      color: var(--color-text-muted);
+      border-color: var(--color-border);
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--color-bg);
+      color: var(--color-text);
+    }
+
+    .btn-sm {
+      padding: 0.3125rem 0.625rem;
+      font-size: 0.8125rem;
+    }
+
+    /* ---- Card / Section ---- */
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--color-border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-header h2 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .card-body {
+      padding: 1.25rem;
+    }
+
+    /* ---- Collapsible ---- */
+    .collapsible {
+      border: 1px solid var(--color-border-light);
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+    }
+
+    .collapsible-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      font-family: var(--font-stack);
+      background: var(--color-bg);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      color: var(--color-text);
+    }
+
+    .collapsible-trigger:hover {
+      background: var(--color-border-light);
+    }
+
+    .collapsible-trigger .chevron {
+      transition: transform 0.2s;
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+
+    .collapsible.open .collapsible-trigger .chevron {
+      transform: rotate(180deg);
+    }
+
+    .collapsible-content {
+      display: none;
+      padding: 1rem;
+      border-top: 1px solid var(--color-border-light);
+    }
+
+    .collapsible.open .collapsible-content {
+      display: block;
+    }
+
+    /* ---- Toggle Switch ---- */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      margin-bottom: 1rem;
+    }
+
+    .toggle {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--color-border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-track::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .toggle input:checked + .toggle-track {
+      background: var(--color-primary);
+    }
+
+    .toggle input:checked + .toggle-track::after {
+      transform: translateX(16px);
+    }
+
+    .toggle input:focus-visible + .toggle-track {
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+
+    .toggle-label {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* ---- Radio Group ---- */
+    .radio-group {
+      display: flex;
+      gap: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-weight: 400;
+      cursor: pointer;
+    }
+
+    .radio-group input[type="radio"] {
+      width: auto;
+      accent-color: var(--color-primary);
+    }
+
+    /* ---- Forms List ---- */
+    .forms-list-empty {
+      text-align: center;
+      padding: 2rem;
+      color: var(--color-text-muted);
+      font-size: 0.875rem;
+    }
+
+    .form-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.875rem 1.25rem;
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .form-item:last-child {
+      border-bottom: none;
+    }
+
+    .form-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .form-item-name {
+      font-weight: 500;
+      font-size: 0.9375rem;
+    }
+
+    .form-item-meta {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      margin-top: 0.125rem;
+    }
+
+    .form-item-url {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-top: 0.25rem;
+    }
+
+    .form-item-url code {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: var(--color-bg);
+      padding: 0.125rem 0.375rem;
+      border-radius: 3px;
+      border: 1px solid var(--color-border-light);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 400px;
+    }
+
+    .form-item-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 600px) {
+      .form-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .form-item-url code {
+        max-width: 100%;
+      }
+
+      .form-item-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+
+    /* ---- Toast ---- */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      box-shadow: var(--shadow);
+      border: 1px solid;
+      max-width: 380px;
+      animation: toast-in 0.25s ease-out;
+    }
+
+    .toast-success {
+      background: var(--color-success-bg);
+      border-color: #bbf7d0;
+      color: #15803d;
+    }
+
+    .toast-error {
+      background: var(--color-error-bg);
+      border-color: #fecaca;
+      color: #b91c1c;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---- Loading Spinner ---- */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ---- Confirm Dialog ---- */
+    .dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+    }
+
+    .dialog-overlay[hidden] {
+      display: none;
+    }
+
+    .dialog {
+      background: var(--color-surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      max-width: 400px;
+      width: 100%;
+      margin: 1rem;
+    }
+
+    .dialog h3 {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .dialog p {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      margin-bottom: 1.25rem;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    /* ---- Utility ---- */
+    .hidden {
+      display: none !important;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>FormRoute Dashboard</h1>
-        
-        <div class="form-section">
-            <h2>Create New Form</h2>
-            <form id="createForm">
-                <div class="form-grid">
-                    <input type="text" id="formName" placeholder="Form Name" class="form-input" required>
-                    <input type="url" id="redirectUrl" placeholder="Redirect URL (optional)" class="form-input">
-                    <input type="text" id="successMessage" placeholder="Success Message (optional)" class="form-input">
-                </div>
-                <textarea id="emailTemplate" placeholder="Email Template (HTML, optional)" class="form-input" rows="4" style="width: 100%; margin-bottom: 15px;"></textarea>
-                
-                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Email Configuration (Optional)</h3>
-                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
-                    Configure SMTP settings to send email notifications for this form. Leave blank to disable email notifications.
-                </p>
-                
-                <div class="form-grid">
-                    <input type="text" id="smtpHost" placeholder="SMTP Host (e.g., mail.smtp2go.com)" class="form-input">
-                    <input type="number" id="smtpPort" placeholder="SMTP Port (e.g., 587)" class="form-input">
-                    <input type="text" id="smtpUser" placeholder="SMTP Username" class="form-input">
-                    <input type="password" id="smtpPass" placeholder="SMTP Password" class="form-input">
-                </div>
-                <div class="form-grid" style="margin-top: 15px;">
-                    <input type="email" id="fromEmail" placeholder="From Email (sender)" class="form-input">
-                    <input type="email" id="toEmail" placeholder="To Email (recipient)" class="form-input">
-                    <label style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
-                        <input type="checkbox" id="smtpSecure"> Use SSL/TLS (recommended for port 465)
-                    </label>
-                </div>
-                
-                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Data Routing (Optional)</h3>
-                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
-                    Choose where form submissions should be sent. Leave blank to use default SQLite storage.
-                </p>
-                
-                <div class="form-grid">
-                    <select id="databaseType" class="form-input" onchange="toggleDatabaseOptions()">
-                        <option value="">Select routing option...</option>
-                        <option value="sqlite">SQLite (Default)</option>
-                        <option value="make_webhook">Make.com Webhook</option>
-                        <option value="google_sheets">Google Sheets</option>
-                        <option value="webhook">Custom Webhook</option>
-                        <option value="turso">Turso Database</option>
-                    </select>
-                </div>
-                
-                <!-- Make.com Webhook Options -->
-                <div id="makeWebhookOptions" style="display: none; margin-top: 15px;">
-                    <input type="url" id="makeWebhookUrl" placeholder="Make.com Webhook URL" class="form-input">
-                </div>
-                
-                <!-- Google Sheets Options -->
-                <div id="googleSheetsOptions" style="display: none; margin-top: 15px;">
-                    <div class="form-grid">
-                        <input type="text" id="sheetId" placeholder="Google Sheets ID" class="form-input">
-                        <input type="email" id="serviceEmail" placeholder="Service Account Email" class="form-input">
-                    </div>
-                    <textarea id="privateKey" placeholder="Private Key (-----BEGIN PRIVATE KEY-----...)" class="form-input" rows="3" style="width: 100%; margin-top: 15px;"></textarea>
-                </div>
-                
-                <!-- Custom Webhook Options -->
-                <div id="webhookOptions" style="display: none; margin-top: 15px;">
-                    <input type="url" id="webhookUrl" placeholder="Webhook URL (https://your-api.com/webhooks/forms)" class="form-input" style="margin-bottom: 15px;">
-                    <div class="form-grid">
-                        <input type="text" id="headerKey1" placeholder="Header Key (e.g., Authorization)" class="form-input">
-                        <input type="text" id="headerValue1" placeholder="Header Value (e.g., Bearer your-token)" class="form-input">
-                    </div>
-                    <div class="form-grid" style="margin-top: 10px;">
-                        <input type="text" id="headerKey2" placeholder="Additional Header Key (optional)" class="form-input">
-                        <input type="text" id="headerValue2" placeholder="Additional Header Value (optional)" class="form-input">
-                    </div>
-                </div>
-                
-                <!-- Turso Options -->
-                <div id="tursoOptions" style="display: none; margin-top: 15px;">
-                    <div class="form-grid">
-                        <input type="url" id="tursoUrl" placeholder="Turso Database URL" class="form-input">
-                        <input type="text" id="tursoToken" placeholder="Turso Auth Token" class="form-input">
-                    </div>
-                </div>
-                
-                <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;">
-                    <label style="display: flex; align-items: flex-start; gap: 12px; font-size: 14px; line-height: 1.5;">
-                        <input type="checkbox" id="termsConsent" required style="margin-top: 2px; transform: scale(1.2);">
-                        <span>
-                            I agree to the <a href="/terms-of-service.html" target="_blank" style="color: #667eea;">Terms of Service</a> 
-                            and <a href="/privacy-policy.html" target="_blank" style="color: #667eea;">Privacy Policy</a>. 
-                            I understand that SMTP credentials and form data will be stored securely and used only for form processing.
-                        </span>
-                    </label>
-                </div>
-                
-                <button type="submit" class="btn">Create Form</button>
-            </form>
-            <div id="formResult"></div>
+
+  <!-- Auth Gate -->
+  <div id="authOverlay" class="auth-overlay" role="dialog" aria-label="Admin authentication">
+    <div class="auth-card">
+      <h1>FormRoute Dashboard</h1>
+      <p>Enter your admin API key to continue.</p>
+      <form id="authForm" novalidate>
+        <div class="field">
+          <label for="authKey">Admin API Key</label>
+          <input type="password" id="authKey" autocomplete="off" required placeholder="Enter your API key">
         </div>
-
+        <div id="authError" class="hidden" style="color: var(--color-danger); font-size: 0.8125rem; margin-bottom: 0.75rem;" role="alert"></div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+      </form>
     </div>
+  </div>
 
-    <script>
-        document.getElementById('createForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // Build email configuration if SMTP fields are filled
-            let emailConfig = null;
-            const smtpHost = document.getElementById('smtpHost').value.trim();
-            const smtpUser = document.getElementById('smtpUser').value.trim();
-            const smtpPass = document.getElementById('smtpPass').value.trim();
-            const fromEmail = document.getElementById('fromEmail').value.trim();
-            const toEmail = document.getElementById('toEmail').value.trim();
-            
-            if (smtpHost && smtpUser && smtpPass && fromEmail && toEmail) {
-                emailConfig = {
-                    smtp_host: smtpHost,
-                    smtp_port: parseInt(document.getElementById('smtpPort').value) || 587,
-                    smtp_secure: document.getElementById('smtpSecure').checked,
-                    smtp_user: smtpUser,
-                    smtp_pass: smtpPass,
-                    from_email: fromEmail,
-                    to_email: toEmail
-                };
-            }
-            
-            // Build database configuration (excluding custom webhooks)
-            let databaseConfig = { type: 'sqlite' }; // Default
-            let webhookConfig = null; // For client-side webhooks
-            const dbType = document.getElementById('databaseType').value;
-            
-            if (dbType === 'make_webhook') {
-                const webhookUrl = document.getElementById('makeWebhookUrl').value.trim();
-                if (webhookUrl) {
-                    databaseConfig = { type: 'make_webhook', webhookUrl };
-                }
-            } else if (dbType === 'google_sheets') {
-                const sheetId = document.getElementById('sheetId').value.trim();
-                const serviceEmail = document.getElementById('serviceEmail').value.trim();
-                const privateKey = document.getElementById('privateKey').value.trim();
-                if (sheetId && serviceEmail && privateKey) {
-                    databaseConfig = {
-                        type: 'google_sheets',
-                        sheetId,
-                        credentials: {
-                            type: 'service_account',
-                            client_email: serviceEmail,
-                            private_key: privateKey
-                        }
-                    };
-                }
-            } else if (dbType === 'webhook') {
-                // Custom webhooks are handled client-side only
-                const webhookUrl = document.getElementById('webhookUrl').value.trim();
-                if (webhookUrl) {
-                    const headers = {};
-                    const key1 = document.getElementById('headerKey1').value.trim();
-                    const value1 = document.getElementById('headerValue1').value.trim();
-                    const key2 = document.getElementById('headerKey2').value.trim();
-                    const value2 = document.getElementById('headerValue2').value.trim();
-                    
-                    if (key1 && value1) headers[key1] = value1;
-                    if (key2 && value2) headers[key2] = value2;
-                    
-                    webhookConfig = { type: 'webhook', webhookUrl, headers };
-                    databaseConfig = { type: 'client_webhook' }; // Marker for client-side webhook
-                }
-            } else if (dbType === 'turso') {
-                const url = document.getElementById('tursoUrl').value.trim();
-                const authToken = document.getElementById('tursoToken').value.trim();
-                if (url && authToken) {
-                    databaseConfig = { type: 'turso', url, authToken };
-                }
-            }
-            
-            const formData = {
-                name: document.getElementById('formName').value,
-                redirect_url: document.getElementById('redirectUrl').value,
-                success_message: document.getElementById('successMessage').value,
-                email_template: document.getElementById('emailTemplate').value,
-                email_config: emailConfig,
-                database: databaseConfig
-            };
+  <!-- App Shell -->
+  <div id="appShell" class="hidden">
+    <header class="app-header">
+      <h1>FormRoute</h1>
+      <button type="button" id="logoutBtn">Sign Out</button>
+    </header>
 
-            try {
-                const response = await fetch('/api/forms', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
+    <main class="container">
 
-                const result = await response.json();
-                
-                if (result.success) {
-                    let submitUrl = result.submitUrl;
-                    
-                    // If custom webhook was configured, encode it in the URL
-                    if (webhookConfig) {
-                        const encodedConfig = btoa(JSON.stringify(webhookConfig));
-                        submitUrl = `${result.submitUrl}?webhook=${encodeURIComponent(encodedConfig)}`;
-                    }
-                    
-                    document.getElementById('formResult').innerHTML = `
-                        <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 4px; margin-top: 15px;">
-                            <strong>Form created successfully!</strong><br>
-                            Form ID: ${result.formId}
-                            <div class="form-url">
-                                Submit URL: ${submitUrl}
-                            </div>
-                            <p style="margin-top: 10px; font-size: 14px;">
-                                Use this URL as your form action:<br>
-                                <code>&lt;form action="${submitUrl}" method="POST"&gt;</code>
-                            </p>
-                            ${webhookConfig ? '<p style="margin-top: 10px; font-size: 12px; color: #856404; background: #fff3cd; padding: 8px; border-radius: 4px;"><strong>Privacy Note:</strong> Your webhook credentials are encoded in the URL and not stored in our database.</p>' : ''}
-                        </div>
-                    `;
-                    document.getElementById('createForm').reset();
-                    toggleDatabaseOptions(); // Reset form options
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (error) {
-                document.getElementById('formResult').innerHTML = `
-                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px; margin-top: 15px;">
-                        Error: ${error.message}
+      <!-- Create Form Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Create New Form</h2>
+        </div>
+        <div class="card-body">
+          <form id="createForm" novalidate>
+
+            <!-- Core Fields -->
+            <div class="field">
+              <label for="formName">Form Name <span aria-hidden="true" style="color: var(--color-danger);">*</span></label>
+              <input type="text" id="formName" required placeholder="e.g. Contact Form">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="redirectUrl">Redirect URL</label>
+                <input type="url" id="redirectUrl" placeholder="https://example.com/thanks">
+              </div>
+              <div class="field">
+                <label for="successMessage">Success Message</label>
+                <input type="text" id="successMessage" placeholder="Thank you for your submission!">
+              </div>
+            </div>
+            <div class="field">
+              <label for="emailTemplate">Email Template</label>
+              <textarea id="emailTemplate" placeholder="<h2>New submission from {{_formName}}</h2>&#10;{{#each fields}}&#10;  <p><strong>{{key}}</strong>: {{value}}</p>&#10;{{/each}}"></textarea>
+              <div class="field-hint">HTML template for notification emails. Leave blank to use the default template.</div>
+            </div>
+
+            <!-- Email Provider Config -->
+            <div class="collapsible" id="emailSection">
+              <button type="button" class="collapsible-trigger" aria-expanded="false" aria-controls="emailContent">
+                <span>Email Provider Configuration</span>
+                <span class="chevron" aria-hidden="true">&#9660;</span>
+              </button>
+              <div class="collapsible-content" id="emailContent">
+                <div class="field">
+                  <label for="emailProvider">Provider</label>
+                  <select id="emailProvider">
+                    <option value="">-- Select Provider --</option>
+                    <option value="resend">Resend</option>
+                    <option value="sendgrid">SendGrid</option>
+                    <option value="mailgun">Mailgun</option>
+                    <option value="postmark">Postmark</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="emailApiKey">API Key</label>
+                  <input type="password" id="emailApiKey" placeholder="Provider API key">
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label for="fromEmail">From Email</label>
+                    <input type="email" id="fromEmail" placeholder="noreply@example.com">
+                  </div>
+                  <div class="field">
+                    <label for="toEmail">To Email</label>
+                    <input type="email" id="toEmail" placeholder="admin@example.com">
+                  </div>
+                </div>
+                <div class="field hidden" id="domainField">
+                  <label for="emailDomain">Mailgun Domain</label>
+                  <input type="text" id="emailDomain" placeholder="mg.example.com">
+                </div>
+              </div>
+            </div>
+
+            <!-- Data Routing -->
+            <div class="collapsible" id="routingSection">
+              <button type="button" class="collapsible-trigger" aria-expanded="false" aria-controls="routingContent">
+                <span>Data Routing</span>
+                <span class="chevron" aria-hidden="true">&#9660;</span>
+              </button>
+              <div class="collapsible-content" id="routingContent">
+                <div class="radio-group">
+                  <label>
+                    <input type="radio" name="dataRouting" value="d1" checked>
+                    D1 Database (Default)
+                  </label>
+                  <label>
+                    <input type="radio" name="dataRouting" value="webhook">
+                    Custom Webhook
+                  </label>
+                </div>
+                <div id="webhookFields" class="hidden">
+                  <div class="field">
+                    <label for="webhookUrl">Webhook URL</label>
+                    <input type="url" id="webhookUrl" placeholder="https://api.example.com/webhook">
+                  </div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label for="headerKey1">Header Name</label>
+                      <input type="text" id="headerKey1" placeholder="X-Custom-Header">
                     </div>
-                `;
-            }
-        });
-        
-        // Toggle database options based on selection
-        function toggleDatabaseOptions() {
-            const dbType = document.getElementById('databaseType').value;
-            
-            // Hide all options first
-            document.getElementById('makeWebhookOptions').style.display = 'none';
-            document.getElementById('googleSheetsOptions').style.display = 'none';
-            document.getElementById('webhookOptions').style.display = 'none';
-            document.getElementById('tursoOptions').style.display = 'none';
-            
-            // Show relevant option
-            if (dbType === 'make_webhook') {
-                document.getElementById('makeWebhookOptions').style.display = 'block';
-            } else if (dbType === 'google_sheets') {
-                document.getElementById('googleSheetsOptions').style.display = 'block';
-            } else if (dbType === 'webhook') {
-                document.getElementById('webhookOptions').style.display = 'block';
-            } else if (dbType === 'turso') {
-                document.getElementById('tursoOptions').style.display = 'block';
-            }
-        }
-        
-        // Add some visual feedback for form interactions
-        document.querySelectorAll('input, textarea, select').forEach(field => {
-            field.addEventListener('focus', function() {
-                this.parentElement.style.transform = 'translateY(-2px)';
-            });
-            
-            field.addEventListener('blur', function() {
-                this.parentElement.style.transform = 'translateY(0)';
-            });
-        });
+                    <div class="field">
+                      <label for="headerVal1">Header Value</label>
+                      <input type="text" id="headerVal1" placeholder="value">
+                    </div>
+                  </div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label for="headerKey2">Header Name</label>
+                      <input type="text" id="headerKey2" placeholder="Authorization">
+                    </div>
+                    <div class="field">
+                      <label for="headerVal2">Header Value</label>
+                      <input type="text" id="headerVal2" placeholder="Bearer token">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-    </script>
+            <!-- Spam Protection -->
+            <div class="collapsible" id="spamSection">
+              <button type="button" class="collapsible-trigger" aria-expanded="false" aria-controls="spamContent">
+                <span>Spam Protection</span>
+                <span class="chevron" aria-hidden="true">&#9660;</span>
+              </button>
+              <div class="collapsible-content" id="spamContent">
+                <div class="toggle-wrap">
+                  <div class="toggle">
+                    <input type="checkbox" id="spamEnabled" aria-label="Enable spam protection">
+                    <label for="spamEnabled" class="toggle-track"></label>
+                  </div>
+                  <span class="toggle-label" id="spamToggleLabel">Disabled</span>
+                </div>
+                <div id="spamFields" class="hidden">
+                  <div class="field-row">
+                    <div class="field">
+                      <label for="captchaType">CAPTCHA Type</label>
+                      <select id="captchaType">
+                        <option value="recaptcha_v2">reCAPTCHA v2</option>
+                        <option value="recaptcha_v3">reCAPTCHA v3</option>
+                        <option value="hcaptcha">hCaptcha</option>
+                        <option value="turnstile">Turnstile</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="captchaSecret">Secret Key</label>
+                      <input type="password" id="captchaSecret" placeholder="CAPTCHA secret key">
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="honeypotField">Honeypot Field Name</label>
+                    <input type="text" id="honeypotField" value="_gotcha" placeholder="_gotcha">
+                    <div class="field-hint">Hidden field name used to catch bots. Submissions with this field filled will be rejected.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="padding-top: 0.5rem;">
+              <button type="submit" class="btn btn-primary" id="createBtn">Create Form</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Existing Forms -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Your Forms</h2>
+          <button type="button" class="btn btn-ghost btn-sm" id="refreshBtn" aria-label="Refresh forms list">Refresh</button>
+        </div>
+        <div id="formsList">
+          <div class="forms-list-empty" id="formsLoading">Loading forms...</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Delete Confirmation Dialog -->
+  <div class="dialog-overlay" id="deleteDialog" hidden role="dialog" aria-label="Confirm deletion">
+    <div class="dialog">
+      <h3>Delete Form</h3>
+      <p>This will permanently delete the form and all its submissions. This action cannot be undone.</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" id="cancelDeleteBtn">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toasts" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      // ---- DOM References ----
+      const $ = (sel) => document.querySelector(sel);
+      const $$ = (sel) => document.querySelectorAll(sel);
+
+      const authOverlay = $("#authOverlay");
+      const authForm = $("#authForm");
+      const authKeyInput = $("#authKey");
+      const authError = $("#authError");
+      const appShell = $("#appShell");
+      const logoutBtn = $("#logoutBtn");
+
+      const createForm = $("#createForm");
+      const createBtn = $("#createBtn");
+      const formsList = $("#formsList");
+      const refreshBtn = $("#refreshBtn");
+
+      const emailProvider = $("#emailProvider");
+      const domainField = $("#domainField");
+
+      const routingRadios = $$('input[name="dataRouting"]');
+      const webhookFields = $("#webhookFields");
+
+      const spamEnabled = $("#spamEnabled");
+      const spamToggleLabel = $("#spamToggleLabel");
+      const spamFields = $("#spamFields");
+
+      const deleteDialog = $("#deleteDialog");
+      const cancelDeleteBtn = $("#cancelDeleteBtn");
+      const confirmDeleteBtn = $("#confirmDeleteBtn");
+
+      const toastsContainer = $("#toasts");
+
+      let pendingDeleteId = null;
+
+      // ---- Helpers ----
+
+      function getAdminKey() {
+        return sessionStorage.getItem("adminKey") || "";
+      }
+
+      function setAdminKey(key) {
+        sessionStorage.setItem("adminKey", key);
+      }
+
+      function clearAdminKey() {
+        sessionStorage.removeItem("adminKey");
+      }
+
+      function getBaseUrl() {
+        return window.location.origin;
+      }
+
+      async function api(method, path, body) {
+        const headers = {
+          "Authorization": "Bearer " + getAdminKey(),
+          "Content-Type": "application/json"
+        };
+        const opts = { method, headers };
+        if (body) opts.body = JSON.stringify(body);
+
+        const res = await fetch(path, opts);
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Request failed with status " + res.status);
+        }
+        return data;
+      }
+
+      function showToast(message, type) {
+        const el = document.createElement("div");
+        el.className = "toast toast-" + type;
+        el.textContent = message;
+        el.setAttribute("role", "status");
+        toastsContainer.appendChild(el);
+        setTimeout(function () {
+          el.style.opacity = "0";
+          el.style.transition = "opacity 0.2s";
+          setTimeout(function () { el.remove(); }, 200);
+        }, 4000);
+      }
+
+      function formatDate(iso) {
+        if (!iso) return "";
+        var d = new Date(iso);
+        return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+      }
+
+      function buildSubmitUrl(formId) {
+        return getBaseUrl() + "/api/submit/" + formId;
+      }
+
+      async function copyToClipboard(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast("URL copied to clipboard", "success");
+        } catch (_) {
+          // Fallback for older browsers
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          showToast("URL copied to clipboard", "success");
+        }
+      }
+
+      // ---- Auth ----
+
+      function checkAuth() {
+        if (getAdminKey()) {
+          authOverlay.classList.add("hidden");
+          appShell.classList.remove("hidden");
+          loadForms();
+        } else {
+          authOverlay.classList.remove("hidden");
+          appShell.classList.add("hidden");
+          authKeyInput.focus();
+        }
+      }
+
+      authForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        var key = authKeyInput.value.trim();
+        if (!key) {
+          authError.textContent = "API key is required.";
+          authError.classList.remove("hidden");
+          return;
+        }
+
+        // Validate the key by making a test request
+        authError.classList.add("hidden");
+        setAdminKey(key);
+
+        try {
+          await api("GET", "/api/forms");
+          checkAuth();
+        } catch (err) {
+          clearAdminKey();
+          authError.textContent = "Invalid API key. Please try again.";
+          authError.classList.remove("hidden");
+          authKeyInput.focus();
+        }
+      });
+
+      logoutBtn.addEventListener("click", function () {
+        clearAdminKey();
+        authKeyInput.value = "";
+        checkAuth();
+      });
+
+      // ---- Collapsible Sections ----
+
+      $$(".collapsible-trigger").forEach(function (trigger) {
+        trigger.addEventListener("click", function () {
+          var section = trigger.closest(".collapsible");
+          var isOpen = section.classList.toggle("open");
+          trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+      });
+
+      // ---- Email Provider Conditional Fields ----
+
+      emailProvider.addEventListener("change", function () {
+        if (emailProvider.value === "mailgun") {
+          domainField.classList.remove("hidden");
+        } else {
+          domainField.classList.add("hidden");
+          $("#emailDomain").value = "";
+        }
+      });
+
+      // ---- Data Routing Toggle ----
+
+      routingRadios.forEach(function (radio) {
+        radio.addEventListener("change", function () {
+          if (radio.value === "webhook" && radio.checked) {
+            webhookFields.classList.remove("hidden");
+          } else if (radio.value === "d1" && radio.checked) {
+            webhookFields.classList.add("hidden");
+          }
+        });
+      });
+
+      // ---- Spam Toggle ----
+
+      spamEnabled.addEventListener("change", function () {
+        if (spamEnabled.checked) {
+          spamFields.classList.remove("hidden");
+          spamToggleLabel.textContent = "Enabled";
+        } else {
+          spamFields.classList.add("hidden");
+          spamToggleLabel.textContent = "Disabled";
+        }
+      });
+
+      // ---- Create Form ----
+
+      function getCaptchaResponseField(type) {
+        var map = {
+          "recaptcha_v2": "g-recaptcha-response",
+          "recaptcha_v3": "g-recaptcha-response",
+          "hcaptcha": "h-captcha-response",
+          "turnstile": "cf-turnstile-response"
+        };
+        return map[type] || "g-recaptcha-response";
+      }
+
+      function buildPayload() {
+        var payload = {};
+
+        // Name (required)
+        payload.name = $("#formName").value.trim();
+
+        // Optional core fields
+        var redirect = $("#redirectUrl").value.trim();
+        if (redirect) payload.redirect_url = redirect;
+
+        var successMsg = $("#successMessage").value.trim();
+        if (successMsg) payload.success_message = successMsg;
+
+        var tpl = $("#emailTemplate").value.trim();
+        if (tpl) payload.email_template = tpl;
+
+        // Email config - only include if at least provider is selected
+        var provider = emailProvider.value;
+        if (provider) {
+          var emailConfig = { provider: provider };
+          var apiKey = $("#emailApiKey").value.trim();
+          if (apiKey) emailConfig.api_key = apiKey;
+          var from = $("#fromEmail").value.trim();
+          if (from) emailConfig.from_email = from;
+          var to = $("#toEmail").value.trim();
+          if (to) emailConfig.to_email = to;
+          if (provider === "mailgun") {
+            var domain = $("#emailDomain").value.trim();
+            if (domain) emailConfig.domain = domain;
+          }
+          payload.email_config = emailConfig;
+        }
+
+        // Data routing
+        var routingType = document.querySelector('input[name="dataRouting"]:checked').value;
+        if (routingType === "d1") {
+          payload.database = { type: "d1" };
+        } else {
+          var webhookUrl = $("#webhookUrl").value.trim();
+          var dbConfig = { type: "webhook" };
+          if (webhookUrl) dbConfig.url = webhookUrl;
+          var headers = {};
+          var hk1 = $("#headerKey1").value.trim();
+          var hv1 = $("#headerVal1").value.trim();
+          if (hk1) headers[hk1] = hv1;
+          var hk2 = $("#headerKey2").value.trim();
+          var hv2 = $("#headerVal2").value.trim();
+          if (hk2) headers[hk2] = hv2;
+          if (Object.keys(headers).length > 0) dbConfig.headers = headers;
+          payload.database = dbConfig;
+        }
+
+        // Spam protection
+        if (spamEnabled.checked) {
+          var captchaType = $("#captchaType").value;
+          var secretKey = $("#captchaSecret").value.trim();
+          var honeypot = $("#honeypotField").value.trim() || "_gotcha";
+          payload.spam_protection = {
+            captcha: {
+              type: captchaType,
+              secretKey: secretKey,
+              field: getCaptchaResponseField(captchaType)
+            },
+            honeypot: { field: honeypot }
+          };
+        } else {
+          payload.spam_protection = { disabled: true };
+        }
+
+        return payload;
+      }
+
+      createForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        var name = $("#formName").value.trim();
+        if (!name) {
+          showToast("Form name is required.", "error");
+          $("#formName").focus();
+          return;
+        }
+
+        createBtn.disabled = true;
+        createBtn.innerHTML = '<span class="spinner"></span> Creating...';
+
+        try {
+          var payload = buildPayload();
+          await api("POST", "/api/forms", payload);
+          showToast('Form "' + name + '" created successfully.', "success");
+          createForm.reset();
+          // Reset conditional UI
+          domainField.classList.add("hidden");
+          webhookFields.classList.add("hidden");
+          spamFields.classList.add("hidden");
+          spamToggleLabel.textContent = "Disabled";
+          // Close all collapsible sections
+          $$(".collapsible").forEach(function (s) {
+            s.classList.remove("open");
+            s.querySelector(".collapsible-trigger").setAttribute("aria-expanded", "false");
+          });
+          loadForms();
+        } catch (err) {
+          showToast(err.message || "Failed to create form.", "error");
+        } finally {
+          createBtn.disabled = false;
+          createBtn.textContent = "Create Form";
+        }
+      });
+
+      // ---- List Forms ----
+
+      async function loadForms() {
+        formsList.innerHTML = '<div class="forms-list-empty">Loading forms...</div>';
+
+        try {
+          var data = await api("GET", "/api/forms");
+          var forms = data.forms || [];
+
+          if (forms.length === 0) {
+            formsList.innerHTML = '<div class="forms-list-empty">No forms yet. Create one above to get started.</div>';
+            return;
+          }
+
+          var html = "";
+          forms.forEach(function (form) {
+            var submitUrl = buildSubmitUrl(form.id);
+            html += '<div class="form-item" data-id="' + form.id + '">'
+              + '<div class="form-item-info">'
+              + '<div class="form-item-name">' + escapeHtml(form.name) + '</div>'
+              + '<div class="form-item-meta">Created ' + formatDate(form.created_at) + '</div>'
+              + '<div class="form-item-url">'
+              + '<code title="' + escapeHtml(submitUrl) + '">' + escapeHtml(submitUrl) + '</code>'
+              + '</div>'
+              + '</div>'
+              + '<div class="form-item-actions">'
+              + '<button type="button" class="btn btn-ghost btn-sm copy-url-btn" data-url="' + escapeHtml(submitUrl) + '" aria-label="Copy submit URL for ' + escapeHtml(form.name) + '">Copy URL</button>'
+              + '<button type="button" class="btn btn-danger btn-sm delete-form-btn" data-id="' + form.id + '" data-name="' + escapeHtml(form.name) + '" aria-label="Delete ' + escapeHtml(form.name) + '">Delete</button>'
+              + '</div>'
+              + '</div>';
+          });
+
+          formsList.innerHTML = html;
+
+        } catch (err) {
+          formsList.innerHTML = '<div class="forms-list-empty" style="color: var(--color-danger);">Failed to load forms. ' + escapeHtml(err.message) + '</div>';
+        }
+      }
+
+      function escapeHtml(str) {
+        var div = document.createElement("div");
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+      }
+
+      refreshBtn.addEventListener("click", function () {
+        loadForms();
+      });
+
+      // ---- Delete Form ----
+
+      formsList.addEventListener("click", function (e) {
+        var copyBtn = e.target.closest(".copy-url-btn");
+        if (copyBtn) {
+          copyToClipboard(copyBtn.dataset.url);
+          return;
+        }
+
+        var deleteBtn = e.target.closest(".delete-form-btn");
+        if (deleteBtn) {
+          pendingDeleteId = deleteBtn.dataset.id;
+          deleteDialog.hidden = false;
+          confirmDeleteBtn.focus();
+        }
+      });
+
+      cancelDeleteBtn.addEventListener("click", function () {
+        pendingDeleteId = null;
+        deleteDialog.hidden = true;
+      });
+
+      confirmDeleteBtn.addEventListener("click", async function () {
+        if (!pendingDeleteId) return;
+        var id = pendingDeleteId;
+        pendingDeleteId = null;
+        deleteDialog.hidden = true;
+
+        confirmDeleteBtn.disabled = true;
+
+        try {
+          await api("DELETE", "/api/forms/" + id);
+          showToast("Form deleted.", "success");
+          loadForms();
+        } catch (err) {
+          showToast(err.message || "Failed to delete form.", "error");
+        } finally {
+          confirmDeleteBtn.disabled = false;
+        }
+      });
+
+      // Close dialog on overlay click
+      deleteDialog.addEventListener("click", function (e) {
+        if (e.target === deleteDialog) {
+          pendingDeleteId = null;
+          deleteDialog.hidden = true;
+        }
+      });
+
+      // Close dialog on Escape
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && !deleteDialog.hidden) {
+          pendingDeleteId = null;
+          deleteDialog.hidden = true;
+        }
+      });
+
+      // ---- Init ----
+      checkAuth();
+
+    })();
+  </script>
 </body>
 </html>

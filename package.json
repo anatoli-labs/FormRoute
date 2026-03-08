@@ -1,27 +1,19 @@
 {
   "name": "formroute",
-  "version": "1.0.0",
-  "main": "index.js",
+  "version": "2.0.0",
+  "private": true,
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute formroute --local --file=migrations/0001_init.sql",
+    "db:migrate:prod": "wrangler d1 execute formroute --remote --file=migrations/0001_init.sql",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "express-validator": "^7.2.1",
-    "nodemailer": "^7.0.5",
-    "sqlite3": "^5.1.7",
-    "uuid": "^11.1.0"
-  },
-  "optionalDependencies": {
-    "@libsql/client": "^0.14.0",
-    "google-spreadsheet": "^4.1.4"
+    "itty-router": "^5.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "wrangler": "^4.0.0"
   }
 }
