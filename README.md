@@ -1,23 +1,23 @@
 # FormRoute
 
-A serverless form handling service built on Cloudflare Workers. Accept form submissions, send email notifications, and route data to webhooks — like Formspree, but self-hosted.
+A serverless form handling service built on Cloudflare Workers. Accept form submissions, send email notifications, and route data to webhooks, like Formspree but self-hosted.
 
 ## Features
 
-- **Cloudflare Workers** — runs at the edge in 300+ locations, no cold starts
-- **D1 Database** — form config and submission storage at the edge
-- **REST Email Providers** — Resend, SendGrid, Mailgun, Postmark (per-form config)
-- **Spam Protection** — reCAPTCHA v2/v3, hCaptcha, Cloudflare Turnstile, honeypot
-- **Rate Limiting** — KV-backed, persistent across requests (10/IP per 15 min)
-- **Admin Dashboard** — API key-protected web UI for form management
-- **Custom Webhooks** — route submissions to any API endpoint
+- **Cloudflare Workers**: runs at the edge in 300+ locations, no cold starts
+- **D1 Database**: form config and submission storage at the edge
+- **REST Email Providers**: Resend, SendGrid, Mailgun, Postmark (per-form config)
+- **Spam Protection**: reCAPTCHA v2/v3, hCaptcha, Cloudflare Turnstile, honeypot
+- **Rate Limiting**: Cloudflare's rate limiting binding, 10 submissions per IP per minute
+- **Admin Dashboard**: API key-protected web UI for form management
+- **Custom Webhooks**: route submissions to any API endpoint
 
 ## Quick Start
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/) (`npm install -g wrangler`)
+- [Node.js](https://nodejs.org/) 22+
+- [Wrangler](https://developers.cloudflare.com/workers/wrangler/) comes with `npm install`; run it with `npx wrangler`
 - Cloudflare account
 
 ### Setup
@@ -29,20 +29,16 @@ cd FormRoute
 npm install
 
 # Authenticate with Cloudflare
-wrangler login
+npx wrangler login
 
 # Create D1 database
-wrangler d1 create formroute
+npx wrangler d1 create formroute
 # Copy the database_id from output into wrangler.toml
-
-# Create KV namespace for rate limiting
-wrangler kv namespace create RATE_LIMIT
-# Copy the id from output into wrangler.toml
 
 # Set admin API key
 echo 'ADMIN_API_KEY=your-secure-key-here' > .dev.vars
 
-# Run migration
+# Run migrations
 npm run db:migrate
 
 # Start dev server
@@ -52,11 +48,11 @@ npm run dev
 ### Deploy
 
 ```bash
-# Run migration on production D1
+# Run migrations on production D1
 npm run db:migrate:prod
 
 # Set production admin key
-wrangler secret put ADMIN_API_KEY
+npx wrangler secret put ADMIN_API_KEY
 
 # Deploy
 npm run deploy
@@ -87,6 +83,8 @@ All admin endpoints require `Authorization: Bearer <ADMIN_API_KEY>`.
 | `GET` | `/api/forms/:id/submissions` | Admin | View submissions |
 | `POST` | `/api/submit/:id` | Public | Submit form data |
 | `GET` | `/api/health` | None | Health check |
+
+The submissions endpoint takes `limit` (default 100, up to 500) and `offset`, and returns `total` for the whole form.
 
 ### Create a Form
 
@@ -134,8 +132,8 @@ Each form can use its own email provider. Supported providers:
 
 ### Data Routing
 
-- **D1 (default)** — stored in Cloudflare D1, readable via submissions API
-- **Webhook** — POST to any URL with optional custom headers
+- **D1 (default)**: stored in Cloudflare D1, readable via submissions API
+- **Webhook**: POST to any URL with optional custom headers
 
 ```json
 {
@@ -186,19 +184,29 @@ formroute/
 │   │   └── submit.js         # Public submission endpoint
 │   ├── lib/
 │   │   ├── auth.js           # Admin + per-form authentication
+│   │   ├── body.js           # Request body parsing
 │   │   ├── database.js       # D1 + webhook adapters
 │   │   ├── email.js          # REST email provider abstraction
-│   │   ├── rate-limit.js     # KV-backed rate limiting
 │   │   └── spam.js           # CAPTCHA + honeypot verification
 │   └── middleware/
 │       └── cors.js           # CORS + response helpers
 ├── public/
 │   └── dashboard.html        # Admin dashboard
 ├── migrations/
-│   └── 0001_init.sql         # D1 schema
+│   ├── 0001_init.sql         # D1 schema
+│   └── 0002_submissions_form_date_index.sql
+├── test/                     # Vitest suite, runs in the Workers runtime
 ├── wrangler.toml             # Workers config
 └── package.json
 ```
+
+## Tests
+
+```bash
+npm test
+```
+
+The suite runs inside the Workers runtime against a local D1 database, so nothing touches your Cloudflare account.
 
 ## License
 

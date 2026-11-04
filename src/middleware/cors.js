@@ -5,20 +5,24 @@ const CORS_HEADERS = {
   'Access-Control-Max-Age': '86400'
 };
 
-export function handleOptions() {
-  return new Response(null, { status: 204, headers: CORS_HEADERS });
+export function handlePreflight(request) {
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
 }
 
-export function jsonResponse(data, status = 200) {
+export function addCorsHeaders(response) {
+  for (const [key, value] of Object.entries(CORS_HEADERS)) {
+    response.headers.set(key, value);
+  }
+  return response;
+}
+
+export function jsonResponse(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+    headers: { 'Content-Type': 'application/json', ...headers }
   });
 }
 
 export function redirectResponse(url) {
-  return new Response(null, {
-    status: 302,
-    headers: { Location: url, ...CORS_HEADERS }
-  });
+  return new Response(null, { status: 303, headers: { Location: url } });
 }

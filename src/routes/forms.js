@@ -1,12 +1,18 @@
-import { requireAdmin } from '../lib/auth.js';
+import { readJsonObject } from '../lib/body.js';
 import { jsonResponse } from '../middleware/cors.js';
 
-export async function handleCreateForm(request, env) {
-  const auth = requireAdmin(request, env);
-  if (!auth.success) return jsonResponse({ error: auth.error }, auth.status);
+const DEFAULT_PAGE_SIZE = 100;
+const MAX_PAGE_SIZE = 500;
+const BAD_BODY = { error: 'Request body must be a JSON object' };
 
-  const body = await request.json();
-  if (!body.name) return jsonResponse({ error: 'Form name is required' }, 400);
+function jsonOrUndefined(value) {
+  return value === undefined ? undefined : JSON.stringify(value);
+}
+
+export async function handleCreateForm(request, env) {
+  const body = await readJsonObject(request);
+  if (!body) return jsonResponse(BAD_BODY, 400);
+  if (!body.name || typeof body.name !== 'string') return jsonResponse({ error: 'Form name is required' }, 400);
 
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
@@ -39,9 +45,6 @@ export async function handleCreateForm(request, env) {
 }
 
 export async function handleListForms(request, env) {
-  const auth = requireAdmin(request, env);
-  if (!auth.success) return jsonResponse({ error: auth.error }, auth.status);
-
   const result = await env.DB.prepare(
     'SELECT id, name, created_at, updated_at FROM forms ORDER BY created_at DESC'
   ).all();
@@ -49,90 +52,69 @@ export async function handleListForms(request, env) {
   return jsonResponse({ forms: result.results });
 }
 
-export async function handleGetForm(request, env, formId) {
-  const auth = requireAdmin(request, env);
-  if (!auth.success) return jsonResponse({ error: auth.error }, auth.status);
-
-  const form = await env.DB.prepare('SELECT * FROM forms WHERE id = ?').bind(formId).first();
+export async function handleGetForm(request, env) {
+  const form = await env.DB.prepare('SELECT * FROM forms WHERE id = ?').bind(request.params.formId).first();
   if (!form) return jsonResponse({ error: 'Form not found' }, 404);
 
   return jsonResponse({ form });
 }
 
-export async function handleUpdateForm(request, env, formId) {
-  const auth = requireAdmin(request, env);
-  if (!auth.success) return jsonResponse({ error: auth.error }, auth.status);
+export async function handleUpdateForm(request, env) {
+  const body = await readJsonObject(request);
+  if (!body) return jsonResponse(BAD_BODY, 400);
 
-  const existing = await env.DB.prepare('SELECT id FROM forms WHERE id = ?').bind(formId).first();
-  if (!existing) return jsonResponse({ error: 'Form not found' }, 404);
-
-  const body = await request.json();
-  const fields = [];
-  const values = [];
-
-  const updatable = {
+  const columns = Object.entries({
     name: body.name,
     email_template: body.email_template,
     redirect_url: body.redirect_url,
     success_message: body.success_message,
-    api_key: body.api_key
-  };
+    api_key: body.api_key,
+    database_config: jsonOrUndefined(body.database),
+    spam_protection: jsonOrUndefined(body.spam_protection),
+    email_config: body.email_config === undefined ? undefined : (body.email_config ? JSON.stringify(body.email_config) : null),
+    allowed_domains: jsonOrUndefined(body.allowed_domains)
+  }).filter(([, value]) => value !== undefined);
 
-  for (const [key, value] of Object.entries(updatable)) {
-    if (value !== undefined) {
-      fields.push(`${key} = ?`);
-      values.push(value);
-    }
-  }
+  if (columns.length === 0) return jsonResponse({ error: 'No fields to update' }, 400);
 
-  if (body.database !== undefined) { fields.push('database_config = ?'); values.push(JSON.stringify(body.database)); }
-  if (body.spam_protection !== undefined) { fields.push('spam_protection = ?'); values.push(JSON.stringify(body.spam_protection)); }
-  if (body.email_config !== undefined) { fields.push('email_config = ?'); values.push(body.email_config ? JSON.stringify(body.email_config) : null); }
-  if (body.allowed_domains !== undefined) { fields.push('allowed_domains = ?'); values.push(JSON.stringify(body.allowed_domains)); }
+  const assignments = columns.map(([column]) => `${column} = ?`).join(', ');
+  const form = await env.DB.prepare(`UPDATE forms SET ${assignments}, updated_at = ? WHERE id = ? RETURNING *`)
+    .bind(...columns.map(([, value]) => value), new Date().toISOString(), request.params.formId)
+    .first();
+  if (!form) return jsonResponse({ error: 'Form not found' }, 404);
 
-  if (fields.length === 0) return jsonResponse({ error: 'No fields to update' }, 400);
-
-  fields.push('updated_at = ?');
-  values.push(new Date().toISOString());
-  values.push(formId);
-
-  await env.DB.prepare(`UPDATE forms SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
-
-  const updated = await env.DB.prepare('SELECT * FROM forms WHERE id = ?').bind(formId).first();
-  return jsonResponse({ form: updated });
+  return jsonResponse({ form });
 }
 
-export async function handleDeleteForm(request, env, formId) {
-  const auth = requireAdmin(request, env);
-  if (!auth.success) return jsonResponse({ error: auth.error }, auth.status);
-
-  const result = await env.DB.prepare('DELETE FROM forms WHERE id = ?').bind(formId).run();
-  if (result.meta.changes === 0) return jsonResponse({ error: 'Form not found' }, 404);
-
-  await env.DB.prepare('DELETE FROM submissions WHERE form_id = ?').bind(formId).run();
+export async function handleDeleteForm(request, env) {
+  const { formId } = request.params;
+  const [, deletedForm] = await env.DB.batch([
+    env.DB.prepare('DELETE FROM submissions WHERE form_id = ?').bind(formId),
+    env.DB.prepare('DELETE FROM forms WHERE id = ?').bind(formId)
+  ]);
+  if (deletedForm.meta.changes === 0) return jsonResponse({ error: 'Form not found' }, 404);
 
   return jsonResponse({ success: true });
 }
 
-export async function handleGetSubmissions(request, env, formId) {
-  const auth = requireAdmin(request, env);
-  if (!auth.success) return jsonResponse({ error: auth.error }, auth.status);
-
-  const form = await env.DB.prepare('SELECT id FROM forms WHERE id = ?').bind(formId).first();
-  if (!form) return jsonResponse({ error: 'Form not found' }, 404);
-
+export async function handleGetSubmissions(request, env) {
+  const { formId } = request.params;
   const url = new URL(request.url);
-  const limit = Math.min(parseInt(url.searchParams.get('limit')) || 100, 500);
-  const offset = parseInt(url.searchParams.get('offset')) || 0;
+  const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit')) || DEFAULT_PAGE_SIZE, 1), MAX_PAGE_SIZE);
+  const offset = Math.max(parseInt(url.searchParams.get('offset')) || 0, 0);
 
-  const result = await env.DB.prepare(
-    'SELECT * FROM submissions WHERE form_id = ? ORDER BY submitted_at DESC LIMIT ? OFFSET ?'
-  ).bind(formId, limit, offset).all();
+  // One round trip to the database for all three.
+  const [form, count, page] = await env.DB.batch([
+    env.DB.prepare('SELECT id FROM forms WHERE id = ?').bind(formId),
+    env.DB.prepare('SELECT COUNT(*) AS total FROM submissions WHERE form_id = ?').bind(formId),
+    env.DB.prepare('SELECT * FROM submissions WHERE form_id = ? ORDER BY submitted_at DESC LIMIT ? OFFSET ?').bind(formId, limit, offset)
+  ]);
+  if (form.results.length === 0) return jsonResponse({ error: 'Form not found' }, 404);
 
-  const submissions = result.results.map(row => ({
+  const submissions = page.results.map(row => ({
     ...row,
     data: JSON.parse(row.data)
   }));
 
-  return jsonResponse({ submissions, total: submissions.length, limit, offset });
+  return jsonResponse({ submissions, total: count.results[0].total, limit, offset });
 }

@@ -23,5 +23,5 @@ CREATE TABLE IF NOT EXISTS submissions (
   FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_submissions_form_id ON submissions(form_id);
-CREATE INDEX idx_submissions_submitted_at ON submissions(submitted_at);
+CREATE INDEX IF NOT EXISTS idx_submissions_form_id ON submissions(form_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_submitted_at ON submissions(submitted_at);

@@ -1,3 +1,5 @@
+const WEBHOOK_TIMEOUT_MS = 10_000;
+
 export class D1Adapter {
   constructor(db) {
     this.db = db;
@@ -9,16 +11,6 @@ export class D1Adapter {
       'INSERT INTO submissions (id, form_id, data, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)'
     ).bind(id, formId, JSON.stringify(data), metadata.ip, metadata.userAgent).run();
     return { success: true, submissionId: id };
-  }
-
-  async getSubmissions(formId, limit = 100, offset = 0) {
-    const result = await this.db.prepare(
-      'SELECT * FROM submissions WHERE form_id = ? ORDER BY submitted_at DESC LIMIT ? OFFSET ?'
-    ).bind(formId, limit, offset).run();
-    return result.results.map(row => ({
-      ...row,
-      data: JSON.parse(row.data)
-    }));
   }
 }
 
@@ -39,7 +31,8 @@ export class WebhookAdapter {
         data,
         metadata,
         timestamp: new Date().toISOString()
-      })
+      }),
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS)
     });
 
     if (!response.ok) {
@@ -47,10 +40,6 @@ export class WebhookAdapter {
     }
 
     return { success: true, submissionId };
-  }
-
-  async getSubmissions() {
-    throw new Error('Webhook adapter does not support reading submissions');
   }
 }
 
@@ -62,7 +51,7 @@ export function createAdapter(config, db) {
     parsed = { type: 'd1' };
   }
 
-  switch (parsed.type) {
+  switch (parsed?.type) {
     case 'webhook':
       return new WebhookAdapter(parsed);
     case 'd1':
