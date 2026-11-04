@@ -1,41 +1,20 @@
-async function verifyRecaptchaV2(token, secretKey) {
-  const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(token)}`
-  });
-  const data = await response.json();
-  return { success: data.success };
-}
+const TIMEOUT_MS = 10_000;
 
-async function verifyRecaptchaV3(token, secretKey, minScore = 0.5) {
-  const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(token)}`
-  });
-  const data = await response.json();
-  return { success: data.success && data.score >= minScore, score: data.score };
-}
+const VERIFY_URLS = {
+  recaptcha_v2: 'https://www.google.com/recaptcha/api/siteverify',
+  recaptcha_v3: 'https://www.google.com/recaptcha/api/siteverify',
+  hcaptcha: 'https://hcaptcha.com/siteverify',
+  turnstile: 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
+};
 
-async function verifyHcaptcha(token, secretKey) {
-  const response = await fetch('https://hcaptcha.com/siteverify', {
+async function verifyCaptcha({ type, secretKey, minScore = 0.5 }, token) {
+  const response = await fetch(VERIFY_URLS[type], {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(token)}`
+    body: new URLSearchParams({ secret: secretKey, response: String(token) }),
+    signal: AbortSignal.timeout(TIMEOUT_MS)
   });
   const data = await response.json();
-  return { success: data.success };
-}
-
-async function verifyTurnstile(token, secretKey) {
-  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(token)}`
-  });
-  const data = await response.json();
-  return { success: data.success };
+  return Boolean(data.success) && (type !== 'recaptcha_v3' || data.score >= minScore);
 }
 
 export async function verifySpamProtection(formData, spamConfig) {
@@ -44,34 +23,30 @@ export async function verifySpamProtection(formData, spamConfig) {
   }
 
   if (spamConfig.honeypot) {
-    const field = spamConfig.honeypot.field || '_gotcha';
-    if (formData[field] && formData[field].trim() !== '') {
+    const value = formData[spamConfig.honeypot.field || '_gotcha'];
+    if (value != null && String(value).trim() !== '') {
       return { success: false, reason: 'Spam detected' };
     }
   }
 
   if (spamConfig.captcha) {
-    const { type, secretKey, minScore } = spamConfig.captcha;
-    const token = formData[spamConfig.captcha.field || 'captcha_token'];
+    if (!Object.hasOwn(VERIFY_URLS, spamConfig.captcha.type)) {
+      return { success: false, reason: 'Unknown CAPTCHA type' };
+    }
 
+    const token = formData[spamConfig.captcha.field || 'captcha_token'];
     if (!token) {
       return { success: false, reason: 'CAPTCHA token missing' };
     }
 
-    let result;
-    switch (type) {
-      case 'recaptcha_v2': result = await verifyRecaptchaV2(token, secretKey); break;
-      case 'recaptcha_v3': result = await verifyRecaptchaV3(token, secretKey, minScore); break;
-      case 'hcaptcha': result = await verifyHcaptcha(token, secretKey); break;
-      case 'turnstile': result = await verifyTurnstile(token, secretKey); break;
-      default: return { success: false, reason: 'Unknown CAPTCHA type' };
+    let verified = false;
+    try {
+      verified = await verifyCaptcha(spamConfig.captcha, token);
+    } catch (error) {
+      console.error('CAPTCHA verification error:', error);
     }
-
-    if (!result.success) {
-      return {
-        success: false,
-        reason: `CAPTCHA verification failed${result.score != null ? ` (score: ${result.score})` : ''}`
-      };
+    if (!verified) {
+      return { success: false, reason: 'CAPTCHA verification failed' };
     }
   }
 

@@ -1,19 +1,20 @@
 name = "formroute"
 main = "src/index.js"
-compatibility_date = "2024-12-01"
+compatibility_date = "2026-10-01"
 assets = { directory = "./public" }
-
-[vars]
-ENVIRONMENT = "production"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "formroute"
 database_id = "5bcfc7fe-8243-4db9-a78f-7f1312cfe685"
 
-[[kv_namespaces]]
-binding = "RATE_LIMIT"
-id = "b9a102f0160c447c9ef9025a0e5b72db"
+[[ratelimits]]
+name = "SUBMIT_LIMITER"
+namespace_id = "4201"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
 
 [observability]
 enabled = true
