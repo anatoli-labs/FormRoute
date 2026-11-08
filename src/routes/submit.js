@@ -34,7 +34,13 @@ export async function handleSubmit(request, env, ctx) {
     return jsonResponse({ error: authResult.error }, authResult.status);
   }
 
-  const body = await readBody(request, MAX_BODY_BYTES);
+  let body;
+  try {
+    body = await readBody(request, MAX_BODY_BYTES);
+  } catch {
+    // The upload was cut off partway through.
+    return jsonResponse({ error: 'Unable to parse request body' }, 400);
+  }
   if (!body) {
     return jsonResponse({ error: 'Submission too large' }, 413);
   }
