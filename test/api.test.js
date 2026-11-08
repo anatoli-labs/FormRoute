@@ -23,6 +23,17 @@ const submit = (formId, body, headers = {}) =>
 const submitJson = (formId, data, headers = {}) =>
   submit(formId, JSON.stringify(data), { 'Content-Type': 'application/json', ...headers });
 
+// A ReadableStream has no length up front, so the request goes out without Content-Length.
+function streamOf(...chunks) {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+      controller.close();
+    }
+  });
+}
+
 async function listSubmissions(formId, query = '') {
   const response = await call(`/api/forms/${formId}/submissions${query}`, { headers: ADMIN });
   expect(response.status).toBe(200);
@@ -156,6 +167,23 @@ describe('submitting', () => {
     const formId = await createForm();
     const response = await submit(formId, 'x'.repeat(1024 * 1024 + 1), { 'Content-Type': 'application/json' });
     expect(response.status).toBe(413);
+  });
+
+  it('refuses oversized submissions sent without Content-Length', async () => {
+    const formId = await createForm();
+    // Valid JSON of 1 MB plus 1 byte, so only the cap keeps it out of the database.
+    const json = `{"a":"${'x'.repeat(1024 * 1024 - 7)}"}`;
+    const response = await submit(formId, streamOf(json), { 'Content-Type': 'application/json' });
+    expect(response.status).toBe(413);
+  });
+
+  it('accepts a small streamed submission', async () => {
+    const formId = await createForm();
+    const response = await submit(formId, streamOf('{"name":', '"Test"}'), { 'Content-Type': 'application/json' });
+    expect(response.status).toBe(200);
+
+    const { submissions } = await listSubmissions(formId);
+    expect(submissions[0].data).toEqual({ name: 'Test' });
   });
 
   it('redirects browsers when a redirect URL is set', async () => {

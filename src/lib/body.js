@@ -29,8 +29,33 @@ async function readFormFields(request) {
   }
 }
 
-export function readSubmission(request) {
+// Counts the bytes that actually arrive, so a body sent without Content-Length
+// (chunked, or HTTP/2) can't get past the cap. Returns null as soon as the body
+// goes over, without reading the rest.
+export async function readBody(request, maxBytes) {
+  const chunks = [];
+  if (request.body) {
+    const reader = request.body.getReader();
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  }
+  return new Blob(chunks);
+}
+
+// Parses a body readBody already buffered. A Response over those bytes has the
+// same json() and formData() parsers the request had.
+export function readSubmission(request, body) {
   const contentType = request.headers.get('Content-Type') || '';
   const isForm = contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data');
-  return isForm ? readFormFields(request) : readJsonObject(request);
+  const buffered = new Response(body, { headers: { 'Content-Type': contentType } });
+  return isForm ? readFormFields(buffered) : readJsonObject(buffered);
 }
