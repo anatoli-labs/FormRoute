@@ -1,5 +1,5 @@
 import { authenticateSubmission } from '../lib/auth.js';
-import { readSubmission, safeJsonParse } from '../lib/body.js';
+import { readBody, readSubmission, safeJsonParse } from '../lib/body.js';
 import { verifySpamProtection } from '../lib/spam.js';
 import { createAdapter } from '../lib/database.js';
 import { sendEmail } from '../lib/email.js';
@@ -20,6 +20,7 @@ export async function handleSubmit(request, env, ctx) {
     });
   }
 
+  // A fast path. readBody below enforces the cap on the bytes that actually arrive.
   if (Number(request.headers.get('Content-Length')) > MAX_BODY_BYTES) {
     return jsonResponse({ error: 'Submission too large' }, 413);
   }
@@ -33,7 +34,18 @@ export async function handleSubmit(request, env, ctx) {
     return jsonResponse({ error: authResult.error }, authResult.status);
   }
 
-  const formData = await readSubmission(request);
+  let body;
+  try {
+    body = await readBody(request, MAX_BODY_BYTES);
+  } catch {
+    // The upload was cut off partway through.
+    return jsonResponse({ error: 'Unable to parse request body' }, 400);
+  }
+  if (!body) {
+    return jsonResponse({ error: 'Submission too large' }, 413);
+  }
+
+  const formData = await readSubmission(request, body);
   if (!formData) {
     return jsonResponse({ error: 'Unable to parse request body' }, 400);
   }

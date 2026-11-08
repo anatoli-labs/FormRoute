@@ -23,6 +23,17 @@ const submit = (formId, body, headers = {}) =>
 const submitJson = (formId, data, headers = {}) =>
   submit(formId, JSON.stringify(data), { 'Content-Type': 'application/json', ...headers });
 
+// A ReadableStream has no length up front, so the request goes out without Content-Length.
+function streamOf(...chunks) {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+      controller.close();
+    }
+  });
+}
+
 async function listSubmissions(formId, query = '') {
   const response = await call(`/api/forms/${formId}/submissions${query}`, { headers: ADMIN });
   expect(response.status).toBe(200);
@@ -158,6 +169,23 @@ describe('submitting', () => {
     expect(response.status).toBe(413);
   });
 
+  it('refuses oversized submissions sent without Content-Length', async () => {
+    const formId = await createForm();
+    // Valid JSON of 1 MB plus 1 byte, so only the cap keeps it out of the database.
+    const json = `{"a":"${'x'.repeat(1024 * 1024 - 7)}"}`;
+    const response = await submit(formId, streamOf(json), { 'Content-Type': 'application/json' });
+    expect(response.status).toBe(413);
+  });
+
+  it('accepts a small streamed submission', async () => {
+    const formId = await createForm();
+    const response = await submit(formId, streamOf('{"name":', '"Test"}'), { 'Content-Type': 'application/json' });
+    expect(response.status).toBe(200);
+
+    const { submissions } = await listSubmissions(formId);
+    expect(submissions[0].data).toEqual({ name: 'Test' });
+  });
+
   it('redirects browsers when a redirect URL is set', async () => {
     const formId = await createForm({ redirect_url: 'https://example.com/thanks' });
     const response = await submitJson(formId, { a: 'b' }, { Accept: 'text/html' });
@@ -268,5 +296,19 @@ describe('notification email', () => {
     const formId = await createForm();
     expect((await submitJson(formId, { a: 'b' })).status).toBe(200);
     expect(outbound).not.toHaveBeenCalled();
+  });
+});
+
+describe('webhook routing', () => {
+  it('posts to the address saved as url, as older dashboard forms have it', async () => {
+    const outbound = mockOutboundFetch();
+    const formId = await createForm({ database: { type: 'webhook', url: 'https://hooks.example.com/forms' } });
+
+    expect((await submitJson(formId, { a: 'b' })).status).toBe(200);
+    expect(outbound).toHaveBeenCalledOnce();
+    const [url, request] = outbound.mock.calls[0];
+    expect(url).toBe('https://hooks.example.com/forms');
+    expect(request.method).toBe('POST');
+    expect(JSON.parse(request.body).data).toEqual({ a: 'b' });
   });
 });

@@ -1053,7 +1053,7 @@
         } else {
           var webhookUrl = $("#webhookUrl").value.trim();
           var dbConfig = { type: "webhook" };
-          if (webhookUrl) dbConfig.url = webhookUrl;
+          if (webhookUrl) dbConfig.webhookUrl = webhookUrl;
           var headers = {};
           var hk1 = $("#headerKey1").value.trim();
           var hv1 = $("#headerVal1").value.trim();

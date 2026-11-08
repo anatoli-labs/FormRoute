@@ -16,7 +16,8 @@ export class D1Adapter {
 
 export class WebhookAdapter {
   constructor(config) {
-    this.webhookUrl = config.webhookUrl;
+    // The dashboard used to save the address as url, and those forms still have it there.
+    this.webhookUrl = config.webhookUrl || config.url;
     this.headers = config.headers || {};
   }
 
