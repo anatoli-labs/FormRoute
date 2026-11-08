@@ -298,3 +298,17 @@ describe('notification email', () => {
     expect(outbound).not.toHaveBeenCalled();
   });
 });
+
+describe('webhook routing', () => {
+  it('posts to the address saved as url, as older dashboard forms have it', async () => {
+    const outbound = mockOutboundFetch();
+    const formId = await createForm({ database: { type: 'webhook', url: 'https://hooks.example.com/forms' } });
+
+    expect((await submitJson(formId, { a: 'b' })).status).toBe(200);
+    expect(outbound).toHaveBeenCalledOnce();
+    const [url, request] = outbound.mock.calls[0];
+    expect(url).toBe('https://hooks.example.com/forms');
+    expect(request.method).toBe('POST');
+    expect(JSON.parse(request.body).data).toEqual({ a: 'b' });
+  });
+});
